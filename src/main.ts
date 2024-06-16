@@ -1,9 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
-  console.log(process.env.MEASUREMENT_ID);
+
+  app.setGlobalPrefix('api');
+  app.use(cookieParser());
+  app.enableCors({
+    origin: ['http://localhost:3000'],
+    credentials: true,
+    exposedHeaders: 'set-cookie',
+  });
+
+  app.useGlobalPipes(new ValidationPipe());
+
+  const PORT = process.env.PORT || 7777;
+
+  await app.listen(PORT, () => console.log(`Server started on port: ${PORT}`));
 }
 bootstrap();

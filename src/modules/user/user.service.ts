@@ -1,27 +1,52 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/user.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { hash } from 'argon2';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
+
   async create(dto: CreateUserDto) {
-    const user = await this.prisma.user.findFirst({
-      where: { phone: dto.phone },
-    });
-
-    if (user) {
-      return new BadRequestException('A user with this number exists!');
-    }
-
     try {
+      const hashPassword = await hash(dto.password);
+
       const user = await this.prisma.user.create({
-        data: { ...dto, name: 'user' + (Math.random() * 10000).toFixed() },
+        data: { ...dto, password: hashPassword },
       });
       return user;
     } catch (error) {
       const e = error as Error;
-      return new BadRequestException(e.message);
+      throw new BadRequestException(e.message);
+    }
+  }
+
+  async getById(id: string) {
+    try {
+      const user = await this.prisma.user.findFirst({ where: { id } });
+      if (user) {
+        return user;
+      }
+      throw new BadGatewayException('User not found!');
+    } catch (error) {
+      const e = error as Error;
+      throw new BadRequestException(e.message);
+    }
+  }
+
+  async getByEmail(email: string) {
+    try {
+      const user = await this.prisma.user.findFirst({ where: { email } });
+      if (user) {
+        return user;
+      }
+    } catch (error) {
+      const e = error as Error;
+      throw new BadRequestException(e.message);
     }
   }
 }

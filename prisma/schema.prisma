@@ -9,9 +9,12 @@ datasource db {
 }
 
 model User {
-  id    String @unique @default(cuid())
-  phone Int
-  name  String
+  id        String   @unique @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("user")
 }
