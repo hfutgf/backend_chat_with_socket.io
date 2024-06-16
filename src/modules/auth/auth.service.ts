@@ -3,6 +3,8 @@ import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
+import { LoginDto } from './dto/auth.dto';
+import { verify } from 'argon2';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +28,31 @@ export class AuthService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userData } = user;
+
+    return {
+      accessToken,
+      refreshToken,
+      ...userData,
+    };
+  }
+
+  async login(dto: LoginDto) {
+    const checkUser = await this.userService.getByEmail(dto.email);
+
+    if (!checkUser) {
+      throw new BadRequestException('User not found!');
+    }
+
+    const verifyPassword = await verify(checkUser.password, dto.password);
+
+    if (!verifyPassword) {
+      throw new BadRequestException('Incorrect password!');
+    }
+
+    const { accessToken, refreshToken } = this.issueToken(checkUser.id);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userData } = checkUser;
 
     return {
       accessToken,

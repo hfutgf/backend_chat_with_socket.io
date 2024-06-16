@@ -9,6 +9,7 @@ import {
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../user/dto/user.dto';
 import { Response } from 'express';
+import { LoginDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -21,6 +22,17 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { refreshToken, ...response } = await this.authService.register(dto);
+    this.authService.addRefreshTokenResponse(res, refreshToken);
+    return response;
+  }
+
+  @UsePipes(new ValidationPipe())
+  @Post('login')
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...response } = await this.authService.login(dto);
     this.authService.addRefreshTokenResponse(res, refreshToken);
     return response;
   }
