@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/user.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -82,8 +86,33 @@ export class AuthService {
     expirseIn.setDate(expirseIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN);
     res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
       httpOnly: true,
-      domain: process.env.DOMAIN,
       expires: expirseIn,
+      secure: true,
+      sameSite: 'none',
+    });
+  }
+
+  async getNewTokens(refreshToken: string) {
+    const result = await this.jwt.verifyAsync(refreshToken);
+    if (!result) {
+      throw new UnauthorizedException('Invalid refresh token!');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...user } = await this.userService.getById(result.id);
+
+    const tokens = this.issueToken(user.id);
+    return {
+      user,
+      ...tokens,
+    };
+  }
+
+  removeRefreshTokenResponse(res: Response) {
+    res.cookie(this.REFRESH_TOKEN_NAME, '', {
+      httpOnly: true,
+      domain: process.env.DOMAIN,
+      expires: new Date(0),
       secure: true,
       sameSite: 'none',
     });
