@@ -10,11 +10,48 @@ datasource db {
 
 model User {
   id        String   @unique @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("user")
+  email    String @unique
+  password String
+  name     String
+
+  roomsSent     Message[] @relation("Sender")
+  roomsReceived Message[] @relation("Recipient")
+
+  Room   Room?   @relation("RoomParticipants", fields: [roomId], references: [id])
+  roomId String?
+
+  @@map("users")
+}
+
+model Message {
+  id        String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  content String
+
+  sender   User   @relation("Sender", fields: [senderId], references: [id])
+  senderId String
+
+  recipient   User   @relation("Recipient", fields: [recipientId], references: [id])
+  recipientId String
+
+  room   Room?   @relation("RoomMessages", fields: [roomId], references: [id])
+  roomId String?
+
+  @@map("messages")
+}
+
+model Room {
+  id        String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages     Message[] @relation("RoomMessages")
+  participants User[]    @relation("RoomParticipants")
+
+  @@map("rooms")
 }
